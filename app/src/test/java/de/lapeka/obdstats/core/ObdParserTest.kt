@@ -25,7 +25,7 @@ class ObdParserTest {
     }
 
     @Test fun temperaturesAndVoltage() {
-        assertEquals(90.0, Pid.COOLANT_TEMP.parse("41057A")!!, 0.001)
+        assertEquals(90.0, Pid.COOLANT_TEMP.parse("410582")!!, 0.001)
         assertEquals(14.2, Pid.VOLTAGE.parse("41423778")!!, 0.001)
     }
 
@@ -52,6 +52,6 @@ class ObdParserTest {
     }
 
     @Test fun dtcLegacyPairs() {
-        assertEquals(listOf("P0133", "P0300"), ObdParser.parseDtcs("43 01 33 43 00 00 00\r>"))
+        assertEquals(listOf("P0133", "P0300"), ObdParser.parseDtcs("43 01 33 03 00 00 00\r>"))
     }
 }
