@@ -16,6 +16,7 @@ import de.lapeka.obdstats.MainActivity
 import de.lapeka.obdstats.R
 import de.lapeka.obdstats.core.FuelCalc
 import de.lapeka.obdstats.core.FuelSource
+import de.lapeka.obdstats.core.FuelType
 import de.lapeka.obdstats.core.Format
 import de.lapeka.obdstats.core.ObdParser
 import de.lapeka.obdstats.core.Pid
@@ -139,12 +140,8 @@ class ObdService : Service() {
     private suspend fun CoroutineScope.poll(elm: Elm327, s: Settings, supported: Set<Int>) {
         val slowPids = listOf(Pid.COOLANT_TEMP, Pid.FUEL_LEVEL, Pid.VOLTAGE, Pid.AMBIENT_TEMP, Pid.OIL_TEMP, Pid.INTAKE_TEMP, Pid.ENGINE_LOAD)
             .filter { it.code in supported }
-        val source = when {
-            Pid.FUEL_RATE.code in supported -> FuelSource.FUEL_RATE
-            Pid.MAF.code in supported -> FuelSource.MAF
-            Pid.MAP.code in supported && Pid.RPM.code in supported -> FuelSource.MAP
-            else -> FuelSource.NONE
-        }
+        val source = FuelCalc.chooseSource(s.fuelType, supported)
+        val lambdaPid = FuelCalc.lambdaPid(supported)
         val values = mutableMapOf<Pid, Double>()
         var cycle = 0
         var failures = 0
@@ -156,6 +153,8 @@ class ObdService : Service() {
             return v
         }
 
+        val referenceTorque = if (source == FuelSource.TORQUE) read(Pid.TORQUE_REF) else null
+
         while (isActive) {
             val now = System.currentTimeMillis()
             val speed = read(Pid.SPEED)
@@ -163,6 +162,21 @@ class ObdService : Service() {
 
             val lph: Double? = when (source) {
                 FuelSource.FUEL_RATE -> read(Pid.FUEL_RATE)
+                FuelSource.MAF_LAMBDA -> {
+                    val maf = read(Pid.MAF)
+                    val lambda = lambdaPid?.let { read(it) }
+                    when {
+                        maf != null && lambda != null && lambda > 0 -> FuelCalc.litersPerHourFromMafLambda(maf, lambda, s.fuelType)
+                        maf != null && s.fuelType == FuelType.BENZIN -> FuelCalc.litersPerHourFromMaf(maf, s.fuelType)
+                        else -> null
+                    }
+                }
+                FuelSource.TORQUE -> {
+                    val torque = read(Pid.TORQUE_ACTUAL)
+                    if (torque != null && rpm != null && referenceTorque != null)
+                        FuelCalc.litersPerHourFromTorque(torque, referenceTorque, rpm, s.displacementL, s.fuelType)
+                    else null
+                }
                 FuelSource.MAF -> read(Pid.MAF)?.let { FuelCalc.litersPerHourFromMaf(it, s.fuelType) }
                 FuelSource.MAP -> {
                     val map = read(Pid.MAP)

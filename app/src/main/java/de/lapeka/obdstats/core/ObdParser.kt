@@ -95,13 +95,23 @@ enum class Pid(val code: Int, val label: String, val unit: String, private val d
     VOLTAGE(0x42, "Bordspannung", "V", { d -> if (d.size >= 2) (d[0] * 256 + d[1]) / 1000.0 else null }),
     AMBIENT_TEMP(0x46, "Außentemperatur", "°C", { d -> d.getOrNull(0)?.let { it - 40.0 } }),
     OIL_TEMP(0x5C, "Öltemperatur", "°C", { d -> d.getOrNull(0)?.let { it - 40.0 } }),
-    FUEL_RATE(0x5E, "Kraftstoffrate", "l/h", { d -> if (d.size >= 2) (d[0] * 256 + d[1]) / 20.0 else null });
+    FUEL_RATE(0x5E, "Kraftstoffrate", "l/h", { d -> if (d.size >= 2) (d[0] * 256 + d[1]) / 20.0 else null }),
+    /** Lambda aus der Breitband-Lambdasonde (ältere Nummerierung). */
+    LAMBDA_O2_A(0x24, "Lambda Sonde 1", "", { d -> lambda(d) }),
+    /** Lambda aus der Breitband-Lambdasonde, bei neueren Dieseln üblich. */
+    LAMBDA_O2_B(0x34, "Lambda Sonde 1", "", { d -> lambda(d) }),
+    LAMBDA_CMD(0x44, "Lambda Soll", "", { d -> lambda(d) }),
+    TORQUE_ACTUAL(0x62, "Motormoment", "%", { d -> d.getOrNull(0)?.let { it - 125.0 } }),
+    TORQUE_REF(0x63, "Referenz-Drehmoment", "Nm", { d -> if (d.size >= 2) (d[0] * 256 + d[1]).toDouble() else null });
 
     val command: String get() = "01%02X".format(code)
 
     fun parse(raw: String): Double? = ObdParser.mode01Data(raw, code)?.let(decode)
 
     companion object {
+        private fun lambda(d: IntArray): Double? =
+            if (d.size >= 2) (d[0] * 256 + d[1]) * 2.0 / 65536.0 else null
+
         fun byCode(code: Int): Pid? = entries.firstOrNull { it.code == code }
     }
 }
@@ -126,11 +136,13 @@ object PidNames {
         0x1C to "OBD-Norm des Fahrzeugs",
         0x1F to "Laufzeit seit Motorstart",
         0x21 to "km mit Motorkontrollleuchte",
+        0x24 to "Lambda Sonde 1 (Breitband)",
         0x2C to "AGR Soll",
         0x2F to "Tankfüllstand",
         0x30 to "Warmlaufzyklen seit Fehlerlöschung",
         0x31 to "km seit Fehlerlöschung",
         0x33 to "Luftdruck",
+        0x34 to "Lambda Sonde 1 (Breitband)",
         0x42 to "Bordspannung",
         0x43 to "Absolute Last",
         0x44 to "Lambda Soll",

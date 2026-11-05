@@ -8,9 +8,12 @@ Wochen- und Monatsstatistik und CSV-Export. In Android Auto gibt es eine schlich
 
 - **Verbindung:** Bluetooth-Classic-Adapter (die meisten ELM327, vLinker FS, OBDLink MX+) oder WLAN-Adapter.
   Reine Bluetooth-LE-Adapter werden noch nicht unterstützt.
-- **Verbrauch:** aus der Kraftstoffrate des Steuergeräts (PID 5E), sonst aus der Luftmasse (MAF),
-  sonst geschätzt aus dem Ansaugdruck. Mit dem Korrekturfaktor lässt sich das an echte Tankfüllungen anpassen.
-  Bei Diesel ohne PID 5E ist die MAF-Rechnung nur grob, weil Diesel mager läuft.
+- **Verbrauch:** Die App nimmt die genaueste Quelle, die das Auto anbietet (Anzeige unter „Quelle“):
+  1. Kraftstoffrate des Steuergeräts (PID 5E)
+  2. Luftmasse geteilt durch das gemessene Lambda der Breitbandsonde (PID 34/24) – der Normalfall bei modernen Dieseln
+  3. Diesel: Leistung aus Drehmoment (PID 62/63) × spezifischer Verbrauch
+  4. Luftmasse stöchiometrisch (beim Diesel deutlich zu hoch) oder Ansaugdruck
+  Mit dem Korrekturfaktor lässt sich das Ergebnis an echte Tankfüllungen anpassen.
 - **Fahrten:** Solange die Aufzeichnung läuft, verbindet sich die App alle 10 s neu. Zündung aus beendet die Fahrt,
   Zündung an startet automatisch eine neue. Fahrten unter 100 m werden verworfen. Langer Druck auf eine Fahrt löscht sie.
 - **Fehlerspeicher:** Fehlercodes (Mode 03) lesen. Löschen ist bewusst nicht eingebaut.

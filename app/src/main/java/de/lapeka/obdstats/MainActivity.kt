@@ -194,7 +194,11 @@ class MainActivity : ComponentActivity() {
             }
             appendLine()
             for ((pid, v) in s.values.toSortedMap(compareBy { it.code })) {
-                val decimals = if (pid == Pid.VOLTAGE || pid == Pid.MAF || pid == Pid.FUEL_RATE) 1 else 0
+                val decimals = when (pid) {
+                    Pid.VOLTAGE, Pid.MAF, Pid.FUEL_RATE -> 1
+                    Pid.LAMBDA_O2_A, Pid.LAMBDA_O2_B, Pid.LAMBDA_CMD -> 2
+                    else -> 0
+                }
                 appendLine("%-16s %s".format(pid.label + ":", Format.num(v, pid.unit, decimals)))
             }
         }.trimEnd()
