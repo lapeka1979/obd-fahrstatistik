@@ -36,4 +36,4 @@ jobs:
           name: obd-fahrstatistik-apk
           path: app/build/outputs/apk/debug/*.apk
           # Standard wären 90 Tage; alte Test-APKs belegen sonst Speicher.
-          retention-days: 7
+          retention-days: 2
